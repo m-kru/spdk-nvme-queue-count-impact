@@ -72,7 +72,7 @@ static void nvme_attach_cb(
 static void nvme_init(void) {
 	struct spdk_env_opts opts;
 	spdk_env_opts_init(&opts);
-	opts.name = "10G";
+	opts.name = "spdk-nvme-queues";
 	if (spdk_env_init(&opts) < 0) {
 		panic("unable to initialize SPDK env");
 	}
@@ -87,8 +87,8 @@ static void nvme_init(void) {
 		panic("spdk_nvme_probe() failed: %d", err);
 
 	for (unsigned i = 0; i < NVME_QUEUE_COUNT; i++) {
-		nvme_qpair = spdk_nvme_ctrlr_alloc_io_qpair(nvme_ctrlr, NULL, 0);
-		if (!nvme_qpair)
+		nvme_qpairs[i] = spdk_nvme_ctrlr_alloc_io_qpair(nvme_ctrlr, NULL, 0);
+		if (!nvme_qpairs[i])
 			panic("%d: spdk_nvme_ctrlr_alloc_io_qpair() failed", i);
 		nvme_qpair_indexes[i] = i;
 	}
@@ -98,23 +98,24 @@ static void nvme_init(void) {
 		panic("cannot allocate spdk buf");
 }
 
+static void nvme_write(unsigned queue_idx);
+
 static void nvme_write_cb(void *arg, const struct spdk_nvme_cpl *cpl) {
+	unsigned queue_idx = *(unsigned *)arg;
+
 	if (spdk_nvme_cpl_is_error(cpl)) {
-		spdk_nvme_qpair_print_completion(nvme_qpair, (struct spdk_nvme_cpl *)cpl);
+		spdk_nvme_qpair_print_completion(nvme_qpairs[queue_idx], (struct spdk_nvme_cpl *)cpl);
 		panic(
 			"spkd nvme write error: %s",
 			spdk_nvme_cpl_get_status_string(&cpl->status)
 		);
 	}
-
-	unsigned queue_idx = *(unsigned *)arg;
 	nvme_write(queue_idx);
 }
 
 static void nvme_write(unsigned queue_idx) {
-	if (nvme_lba >= BLOCK_COUNT) {
-		return
-	}
+	if (nvme_lba >= BLOCK_COUNT)
+		return;
 
 	const int err = spdk_nvme_ns_cmd_write(
 		nvme_ns, nvme_qpairs[queue_idx], nvme_buf,
@@ -137,16 +138,16 @@ int main(int argc, char *argv[]) {
 	if (err)
 		panic("can't get start time: %s", strerror(err));
 
-	for (unsigned i = 0; i < NVME_QUEUE_COUNT, i++) {
+	for (unsigned i = 0; i < NVME_QUEUE_COUNT; i++) {
 		nvme_write(i);
 	}
 
-	if (nvme_lba >= NVME_QUEUE_COUNT * BLOCKS_PER_WRITE)
-		error("race condition occured, ignoring this fact")
+	if (nvme_lba != NVME_QUEUE_COUNT * BLOCKS_PER_WRITE)
+		error("race condition occured, ignoring this fact");
 
 	// Wait for completion
 	while (nvme_lba < BLOCK_COUNT) {
-		;
+		//info("%"PRIu64, nvme_lba);
 	}
 
 	err = clock_gettime(CLOCK_MONOTONIC, &end_time);
@@ -157,7 +158,7 @@ int main(int argc, char *argv[]) {
 		(end_time.tv_sec - start_time.tv_sec) * 1000000000 +
 		(end_time.tv_nsec - start_time.tv_nsec);
 
-	const long bandwidth = BLOCK_SIZE * BLOCK_COUNT / time_delta_ns / 1000000000;
+	const long bandwidth = (long)BLOCK_SIZE * (long)BLOCK_COUNT / time_delta_ns / 1000000000;
 
 	info("bandwidth: %" PRIu64 " B/s", bandwidth);
 
