@@ -28,7 +28,7 @@ static bool nvme_probe_cb(
 	const struct spdk_nvme_transport_id *trid,
 	struct spdk_nvme_ctrlr_opts *opts)
 {
-	info("nvme found disk %s", trid->traddr);
+	info("found disk %s", trid->traddr);
 	if (strcmp(NVME_DISK_ADDR, trid->traddr) == 0) {
 		info("trying to attach to %s", trid->traddr);
 		return true;
@@ -42,7 +42,7 @@ static void nvme_attach_cb(
 	struct spdk_nvme_ctrlr *ctrlr,
 	const struct spdk_nvme_ctrlr_opts *opts)
 {
-	info("nvme attached to %s", trid->traddr);
+	info("attached to %s", trid->traddr);
 	nvme_ctrlr = ctrlr;
 	nvme_ctrlr_data = spdk_nvme_ctrlr_get_data(ctrlr);
 
