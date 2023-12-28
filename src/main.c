@@ -1,18 +1,3 @@
-#include <arpa/inet.h>
-#include <errno.h>
-#include <poll.h>
-#include <stdio.h>
-#include <stdint.h>
-#include <stdbool.h>
-#include <string.h>
-#include <sys/ioctl.h>
-#include <sys/mman.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <linux/if_packet.h>
-#include <unistd.h>
-#include <net/if.h>
-
 #include <time.h>
 
 #include <spdk/nvme.h>
@@ -146,9 +131,7 @@ int main(int argc, char *argv[]) {
 		error("race condition occured, ignoring this fact");
 
 	// Wait for completion
-	while (nvme_lba < BLOCK_COUNT) {
-		//info("%"PRIu64, nvme_lba);
-	}
+	while (nvme_lba < BLOCK_COUNT) {}
 
 	err = clock_gettime(CLOCK_MONOTONIC, &end_time);
 	if (err)
