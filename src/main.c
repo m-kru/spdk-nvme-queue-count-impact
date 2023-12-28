@@ -96,8 +96,6 @@ static void nvme_write(unsigned queue_idx);
 static void nvme_write_cb(void *arg, const struct spdk_nvme_cpl *cpl) {
 	unsigned queue_idx = *(unsigned *)arg;
 
-	info("hi");
-
 	if (spdk_nvme_cpl_is_error(cpl)) {
 		spdk_nvme_qpair_print_completion(nvme_qpairs[queue_idx], (struct spdk_nvme_cpl *)cpl);
 		panic(
