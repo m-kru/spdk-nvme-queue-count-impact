@@ -5,6 +5,8 @@
 #include "log.h"
 #include "panic.h"
 
+#define NVME_DISK_ADDR "0000:06:00.0"
+
 #define BLOCK_SIZE (512) // NVMe single block size in bytes.
 #define BLOCK_COUNT (1024 * 1024 * 1024)
 #define BLOCKS_PER_WRITE (1)
@@ -26,8 +28,12 @@ static bool nvme_probe_cb(
 	const struct spdk_nvme_transport_id *trid,
 	struct spdk_nvme_ctrlr_opts *opts)
 {
-	info("nvme attaching to %s", trid->traddr);
-	return true;
+	info("nvme found disk %s", trid->traddr);
+	if (strcmp(NVME_DISK_ADDR, trid->traddr) == 0) {
+		info("trying to attach to %s", trid->traddr);
+		return true;
+	}
+	return false;
 }
 
 static void nvme_attach_cb(
@@ -75,6 +81,8 @@ static void nvme_init(void) {
 		nvme_qpairs[i] = spdk_nvme_ctrlr_alloc_io_qpair(nvme_ctrlr, NULL, 0);
 		if (!nvme_qpairs[i])
 			panic("%d: spdk_nvme_ctrlr_alloc_io_qpair() failed", i);
+		else
+			info("%d: allocated qpair", i);
 		nvme_qpair_indexes[i] = i;
 	}
 
@@ -87,6 +95,8 @@ static void nvme_write(unsigned queue_idx);
 
 static void nvme_write_cb(void *arg, const struct spdk_nvme_cpl *cpl) {
 	unsigned queue_idx = *(unsigned *)arg;
+
+	info("hi");
 
 	if (spdk_nvme_cpl_is_error(cpl)) {
 		spdk_nvme_qpair_print_completion(nvme_qpairs[queue_idx], (struct spdk_nvme_cpl *)cpl);
@@ -109,6 +119,8 @@ static void nvme_write(unsigned queue_idx) {
 	);
 	if (err)
 		panic("%d: spdk_nvme_ns_cmd_write() failed: %d", queue_idx, err);
+
+	debug("%d: writing lba %"PRIu64, queue_idx, nvme_lba);
 
 	nvme_lba += BLOCKS_PER_WRITE;
 }

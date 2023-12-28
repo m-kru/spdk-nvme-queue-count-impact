@@ -257,35 +257,35 @@ log_string_t log_time(void);
 #endif
 
 #if LOG_LEVEL == 0 
-	#define error
-	#define warn
-	#define info
-	#define debug
-	#define trace
+	#define error(...)
+	#define warn(...)
+	#define info(...)
+	#define debug(...)
+	#define trace(...)
 #elif LOG_LEVEL == 1
 	#define error _log_error
-	#define warn 
-	#define info
-	#define debug
-	#define trace
+	#define warn(...) 
+	#define info(...)
+	#define debug(...)
+	#define trace(...)
 #elif LOG_LEVEL == 2
 	#define error _log_error
 	#define warn  _log_warn
-	#define info
-	#define debug
-	#define trace
+	#define info(...)
+	#define debug(...)
+	#define trace(...)
 #elif LOG_LEVEL == 3
 	#define error _log_error
 	#define warn  _log_warn
 	#define info  _log_info
-	#define debug
-	#define trace
+	#define debug(...)
+	#define trace(...)
 #elif LOG_LEVEL == 4
 	#define error _log_error
 	#define warn  _log_warn
 	#define info  _log_info
 	#define debug _log_debug
-	#define trace
+	#define trace(...)
 #elif LOG_LEVEL == 5
 	#define error _log_error
 	#define warn  _log_warn

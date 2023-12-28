@@ -22,7 +22,7 @@ INC_DIRS = $(SRC_DIR) \
 	/home/mkru/spdk/build/include/
 _INC_FLAGS = $(addprefix -I,$(INC_DIRS))
 
-CFLAGS = $(_INC_FLAGS) -DLOG_COLOR
+CFLAGS = $(_INC_FLAGS) -DLOG_COLOR -DLOG_LEVEL=4
 
 PKG_CONFIG_PATH = /home/mkru/spdk/build/lib/pkgconfig
 SPDK_DPDK_LIB := $(shell PKG_CONFIG_PATH="$(PKG_CONFIG_PATH)" pkg-config --libs spdk_nvme spdk_env_dpdk)
