@@ -14,7 +14,6 @@ help:
 	@echo "Other targets:"
 	@echo "  clean  Remove all build products."
 	@echo "  help   Print help message."
-	@echo "  sync   Synchronize files on the server."
 
 CC = gcc
 
@@ -75,7 +74,3 @@ tidy:
 .PHONY: clean
 clean:
 	@rm -rf $(BUILD_DIR)
-
-.PHONY: sync
-sync:
-	./scripts/sync.sh
