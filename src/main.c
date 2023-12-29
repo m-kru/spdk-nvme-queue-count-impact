@@ -8,10 +8,10 @@
 #define NVME_DISK_ADDR "0000:06:00.0"
 
 #define BLOCK_SIZE (512) // NVMe single block size in bytes.
-#define BLOCK_COUNT (1024 * 1024 * 1024)
+#define BLOCK_COUNT (1 * 1024 * 1024)
 #define BLOCKS_PER_WRITE (1)
 
-#define NVME_QUEUE_COUNT (1)
+#define NVME_QUEUE_COUNT (64)
 
 volatile static uint64_t nvme_lba; // Current disk LBA
 
@@ -133,27 +133,28 @@ int main(int argc, char *argv[]) {
 	if (err)
 		panic("can't get start time: %s", strerror(err));
 
-	for (unsigned i = 0; i < NVME_QUEUE_COUNT; i++) {
+	for (unsigned i = 0; i < NVME_QUEUE_COUNT; i++)
 		nvme_write(i);
-	}
-
-	if (nvme_lba != NVME_QUEUE_COUNT * BLOCKS_PER_WRITE)
-		error("race condition occured, ignoring this fact");
 
 	// Wait for completion
-	while (nvme_lba < BLOCK_COUNT) {}
+	while (nvme_lba < BLOCK_COUNT) {
+		for (unsigned i = 0; i < NVME_QUEUE_COUNT; i++) {
+			spdk_nvme_qpair_process_completions(nvme_qpairs[i], 0);
+		}
+	}
 
 	err = clock_gettime(CLOCK_MONOTONIC, &end_time);
 	if (err)
 		panic("can't get end time: %s", strerror(err));
 
-	const long time_delta_ns =
-		(end_time.tv_sec - start_time.tv_sec) * 1000000000 +
-		(end_time.tv_nsec - start_time.tv_nsec);
+	const double time_delta =
+		((end_time.tv_sec - start_time.tv_sec) * 1e9 +
+		(end_time.tv_nsec - start_time.tv_nsec)) / 1e9;
+	info("time delta: %f s", time_delta);
 
-	const long bandwidth = (long)BLOCK_SIZE * (long)BLOCK_COUNT / time_delta_ns / 1000000000;
+	const double bandwidth = (double)BLOCK_SIZE * (double)BLOCK_COUNT / time_delta;
 
-	info("bandwidth: %" PRIu64 " B/s", bandwidth);
+	info("bandwidth: %f MB/s", bandwidth / 1024.0 / 1024.0);
 
 	return 0;
 }
